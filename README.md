@@ -1,8 +1,21 @@
-# 🎓 Simple LMS - REST API & Authentication System
+# 🎓 Simple LMS - Advanced Features & Integration
 
-Sistem backend **Simple Learning Management System (LMS)** berbasis **Django Ninja** yang dibuat untuk memenuhi tugas **Progress 3** mata kuliah **Pemrograman Sisi Server**.
+Progress 4 Simple LMS - Advanced Features & Integration
 
-Project ini mengimplementasikan **REST API lengkap**, **JWT Authentication**, **Role-Based Access Control (RBAC)**, validasi schema menggunakan **Pydantic**, serta dokumentasi API otomatis menggunakan **Swagger UI**.
+Sistem backend **Simple Learning Management System (LMS)** berbasis **Django Ninja** yang dibuat untuk memenuhi tugas **Progress 4: Advanced Features & Integration** pada mata kuliah **Pemrograman Sisi Server**.
+
+Project ini mengimplementasikan:
+
+- REST API menggunakan Django Ninja
+- JWT Authentication
+- Role-Based Access Control (RBAC)
+- Redis Caching
+- MongoDB Activity Logging & Analytics
+- Celery Asynchronous Tasks
+- RabbitMQ Message Broker
+- Flower Monitoring
+- Rate Limiting
+- Docker Compose Deployment
 
 ---
 
@@ -10,9 +23,9 @@ Project ini mengimplementasikan **REST API lengkap**, **JWT Authentication**, **
 
 | Keterangan | Data                               |
 | ---------- | ---------------------------------- |
-| **Nama**   | Iqbal Tegar Pratama                |
-| **NIM**    | A11.2023.14969                     |
-| **Kelas**  | Pemrograman Sisi Server (A11.4602) |
+| Nama       | Iqbal Tegar Pratama                |
+| NIM        | A11.2023.14969                     |
+| Kelas      | Pemrograman Sisi Server (A11.4602) |
 
 ---
 
@@ -20,57 +33,102 @@ Project ini mengimplementasikan **REST API lengkap**, **JWT Authentication**, **
 
 Simple LMS adalah sistem pembelajaran online sederhana yang memungkinkan pengguna untuk:
 
-- Mendaftar akun
-- Login menggunakan JWT Token
-- Melihat daftar course
-- Membuat course (Instructor)
-- Mengedit course milik sendiri
-- Menghapus course (Admin)
-- Mendaftar course (Student)
-- Melihat course yang diikuti
+- Registrasi akun
+- Login menggunakan JWT Authentication
+- Mengelola course
+- Melakukan enrollment course
 - Menandai progress pembelajaran
+- Menggunakan sistem role (Admin, Instructor, Student)
+- Menjalankan background task secara asynchronous
+- Menyimpan activity logs ke MongoDB
+- Menggunakan Redis sebagai caching layer
 
 ---
 
 # 🎯 Tujuan Pembelajaran
 
-Project ini dibuat untuk mempelajari:
+Project ini dibuat untuk mempelajari implementasi backend modern menggunakan:
 
-✅ Pembuatan REST API menggunakan Django Ninja
-✅ Implementasi JWT Authentication
-✅ Sistem hak akses berbasis role
-✅ Validasi data dengan Pydantic Schema
-✅ Dokumentasi API otomatis dengan Swagger
-✅ Struktur backend modern menggunakan Django
+- Django Ninja REST API
+- JWT Authentication
+- Role-Based Access Control (RBAC)
+- PostgreSQL Database
+- Redis Caching
+- MongoDB Document Storage
+- Celery Task Queue
+- RabbitMQ Message Broker
+- Docker Compose
+- Monitoring dengan Flower
 
 ---
 
 # 🛠️ Teknologi yang Digunakan
 
-| Teknologi           | Fungsi             |
-| ------------------- | ------------------ |
-| Python 3            | Bahasa Pemrograman |
-| Django              | Framework Backend  |
-| Django Ninja        | REST API Framework |
-| SQLite / PostgreSQL | Database           |
-| JWT                 | Authentication     |
-| Pydantic            | Validasi Schema    |
-| Swagger UI          | Dokumentasi API    |
+| Teknologi      | Fungsi                          |
+| -------------- | ------------------------------- |
+| Python 3.11    | Bahasa Pemrograman              |
+| Django         | Backend Framework               |
+| Django Ninja   | REST API Framework              |
+| PostgreSQL     | Relational Database             |
+| Redis          | Caching & Celery Result Backend |
+| MongoDB        | Activity Logs & Analytics       |
+| RabbitMQ       | Message Broker                  |
+| Celery         | Asynchronous Task Queue         |
+| Flower         | Monitoring Celery               |
+| JWT            | Authentication                  |
+| Pydantic       | Data Validation                 |
+| Swagger UI     | API Documentation               |
+| Docker Compose | Container Orchestration         |
 
 ---
 
-# 📂 Struktur Fitur
+# 🐳 Docker Services
+
+Project dijalankan menggunakan Docker Compose dengan service berikut:
+
+| Service       | Fungsi               |
+| ------------- | -------------------- |
+| web           | Django Application   |
+| db            | PostgreSQL Database  |
+| redis         | Redis Cache          |
+| mongodb       | MongoDB Database     |
+| rabbitmq      | Message Broker       |
+| celery-worker | Celery Worker        |
+| celery-beat   | Celery Scheduler     |
+| flower        | Monitoring Dashboard |
+
+---
 
 # 🔐 Authentication System
 
-Fitur autentikasi user:
+Fitur autentikasi yang tersedia:
 
-- Register akun baru
-- Login user
-- Generate Access Token
-- Generate Refresh Token
-- Melihat profil user login
-- Update profil user
+- Register User
+- Login User
+- JWT Access Token
+- JWT Refresh Token
+- Get User Profile
+- Update User Profile
+
+---
+
+# 🛡️ Role-Based Access Control (RBAC)
+
+Role yang tersedia:
+
+| Role       | Hak Akses              |
+| ---------- | ---------------------- |
+| Admin      | Full Access            |
+| Instructor | Create & Manage Course |
+| Student    | Enroll Course          |
+
+Permission Decorator:
+
+```python
+@is_admin
+@is_instructor
+@is_student
+```
 
 ---
 
@@ -81,136 +139,245 @@ Fitur autentikasi user:
 Dapat diakses tanpa login:
 
 - Melihat semua course
-- Detail course
+- Melihat detail course
 - Filter course
 - Pagination
 
 ## Protected Endpoint
 
-Butuh login:
+Membutuhkan login:
 
-- Membuat course (**Instructor**)
-- Edit course sendiri (**Owner**)
-- Hapus course (**Admin**)
+- Membuat course
+- Mengedit course
+- Menghapus course
 
 ---
 
 # 📝 Enrollment System
 
-- Student dapat daftar course
-- Melihat course yang diikuti
-- Menandai progress lesson selesai
+Fitur enrollment:
+
+- Student dapat enroll course
+- Melihat daftar course yang diikuti
+- Menandai progress pembelajaran
+- Menyelesaikan course
 
 ---
 
-# 🛡️ Role Based Access Control (RBAC)
+# 🚀 Redis Integration
 
-Sistem role user:
+Redis digunakan untuk meningkatkan performa aplikasi melalui caching.
 
-| Role       | Hak Akses             |
-| ---------- | --------------------- |
-| Admin      | Semua akses           |
-| Instructor | Membuat & edit course |
-| Student    | Enroll course         |
+## Course List Cache
 
-Decorator permission:
+Endpoint:
 
-```python id="mhcc1z"
-@is_admin
-@is_instructor
-@is_student
+```http
+GET /api/courses
+```
+
+Daftar course disimpan di Redis agar tidak selalu mengambil data dari PostgreSQL.
+
+## Course Detail Cache
+
+Endpoint:
+
+```http
+GET /api/courses/{id}
+```
+
+Detail course disimpan ke Redis untuk mempercepat response.
+
+## Cache Invalidation
+
+Cache akan dihapus ketika:
+
+- Course dibuat
+- Course diperbarui
+- Course dihapus
+
+Tujuan:
+
+- Menjaga konsistensi data
+- Mengurangi query database
+- Mempercepat response API
+
+---
+
+# 📊 MongoDB Integration
+
+MongoDB digunakan untuk menyimpan data non-relasional.
+
+## Activity Logs Collection
+
+Mencatat aktivitas pengguna seperti:
+
+- Login
+- Enrollment
+- Update Course
+- Course Completion
+
+## Learning Analytics Collection
+
+Menyimpan data statistik pembelajaran:
+
+- Total enrollment
+- Course completion
+- Aktivitas pengguna
+
+## Aggregation Reports
+
+MongoDB Aggregation digunakan untuk:
+
+- Statistik enrollment per course
+- Statistik penyelesaian course
+- Ringkasan aktivitas user
+
+---
+
+# ⚡ Celery Asynchronous Tasks
+
+Project mengimplementasikan 4 background task:
+
+## 1. send_enrollment_email
+
+Mengirim email ketika student berhasil enroll ke course.
+
+## 2. generate_certificate
+
+Membuat sertifikat ketika course selesai.
+
+## 3. update_course_statistics
+
+Scheduled task untuk memperbarui statistik course.
+
+## 4. export_course_report
+
+Generate laporan course dalam format CSV secara asynchronous.
+
+---
+
+# 📨 RabbitMQ Message Broker
+
+RabbitMQ digunakan sebagai broker komunikasi antara Django dan Celery.
+
+Task Flow:
+
+```text
+Django → RabbitMQ → Celery Worker
+```
+
+RabbitMQ Dashboard:
+
+```text
+http://localhost:15672
+```
+
+Default Login:
+
+```text
+Username: guest
+Password: guest
 ```
 
 ---
 
-# 📌 API Endpoint Lengkap
+# 🌸 Flower Monitoring
 
-# Authentication
+Flower digunakan untuk memonitor Celery Worker.
 
-| Method | Endpoint             | Keterangan         |
-| ------ | -------------------- | ------------------ |
-| POST   | `/api/auth/register` | Register user baru |
-| POST   | `/api/auth/login`    | Login user         |
-| POST   | `/api/auth/refresh`  | Refresh token      |
-| GET    | `/api/auth/me`       | Data user login    |
-| PUT    | `/api/auth/me`       | Update profil      |
+URL:
 
----
+```text
+http://localhost:5555
+```
 
-# Courses
+Fitur:
 
-| Method | Endpoint            | Keterangan    |
-| ------ | ------------------- | ------------- |
-| GET    | `/api/courses`      | Semua course  |
-| GET    | `/api/courses/{id}` | Detail course |
-| POST   | `/api/courses`      | Tambah course |
-| PATCH  | `/api/courses/{id}` | Edit course   |
-| DELETE | `/api/courses/{id}` | Hapus course  |
+- Monitoring worker
+- Monitoring task
+- Monitoring queue
+- Monitoring task success/failure
+- Monitoring task execution
 
 ---
 
-# Enrollments
+# ⏱️ Rate Limiting
 
-| Method | Endpoint                         | Keterangan      |
-| ------ | -------------------------------- | --------------- |
-| POST   | `/api/enrollments`               | Daftar course   |
-| GET    | `/api/enrollments/my-courses`    | Course saya     |
-| POST   | `/api/enrollments/{id}/progress` | Update progress |
+Rate limiting diterapkan pada endpoint API.
+
+Konfigurasi:
+
+```text
+60 requests per minute
+```
+
+Tujuan:
+
+- Mencegah abuse API
+- Mengurangi beban server
+- Menjaga stabilitas aplikasi
 
 ---
 
-# 📖 Dokumentasi Swagger
+# 📌 API Endpoint
 
-Swagger UI tersedia di:
+## Authentication
 
-```bash id="efp94o"
+| Method | Endpoint           |
+| ------ | ------------------ |
+| POST   | /api/auth/register |
+| POST   | /api/auth/login    |
+| POST   | /api/auth/refresh  |
+| GET    | /api/auth/me       |
+| PUT    | /api/auth/me       |
+
+---
+
+## Courses
+
+| Method | Endpoint          |
+| ------ | ----------------- |
+| GET    | /api/courses      |
+| GET    | /api/courses/{id} |
+| POST   | /api/courses      |
+| PATCH  | /api/courses/{id} |
+| DELETE | /api/courses/{id} |
+
+---
+
+## Enrollment
+
+| Method | Endpoint                       |
+| ------ | ------------------------------ |
+| POST   | /api/enrollments               |
+| GET    | /api/enrollments/my-courses    |
+| POST   | /api/enrollments/{id}/progress |
+
+---
+
+# 📖 Swagger Documentation
+
+Swagger UI tersedia pada:
+
+```text
 http://localhost:8000/api/docs
 ```
 
-Fungsi Swagger:
+Fitur:
 
-- Melihat semua endpoint
-- Test API langsung
-- Input JSON request
-- Melihat response
-- Testing token login
-
----
-
-# ⚙️ Cara Menjalankan Project
-
-## 1. Clone Repository
-
-```bash id="j3e7nn"
-git clone https://github.com/username/simple-lms.git
-cd simple-lms
-```
-
-## 2. Install Dependency
-
-```bash id="w5l2o7"
-pip install -r requirements.txt
-```
-
-## 3. Migrasi Database
-
-```bash id="5z2u0q"
-python manage.py migrate
-```
-
-## 4. Jalankan Server
-
-```bash id="w0v9zd"
-python manage.py runserver
-```
+- Melihat endpoint API
+- Mencoba endpoint langsung
+- Melihat request dan response
+- JWT Authorization
 
 ---
 
-# 🔑 Cara Login API
+# 🔑 Contoh Login API
 
 ## Register User
 
-```json id="eifndj"
+```json
 {
   "username": "iqbal123",
   "password": "12345678",
@@ -222,7 +389,7 @@ python manage.py runserver
 
 ## Login
 
-```json id="9gzw49"
+```json
 {
   "username": "iqbal123",
   "password": "12345678"
@@ -231,7 +398,7 @@ python manage.py runserver
 
 ## Response
 
-```json id="1x4tgm"
+```json
 {
   "refresh": "xxxxx",
   "access": "xxxxx"
@@ -240,58 +407,183 @@ python manage.py runserver
 
 ## Authorize Swagger
 
-Klik tombol **Authorize** lalu isi:
+Klik tombol **Authorize** lalu masukkan:
 
-```text id="8db7ez"
+```text
 Bearer access_token_kamu
 ```
 
 ---
 
+# 📌 Redis CLI Documentation
+
+Masuk ke Redis:
+
+```bash
+docker exec -it simplelms-redis-1 redis-cli
+```
+
+Tes koneksi:
+
+```redis
+PING
+```
+
+Output:
+
+```text
+PONG
+```
+
+Melihat key:
+
+```redis
+KEYS *
+```
+
+Menghapus key:
+
+```redis
+DEL nama_key
+```
+
+---
+
+# 🗺️ Architecture Diagram
+
+```mermaid
+flowchart LR
+
+User --> Django
+
+Django --> PostgreSQL
+Django --> Redis
+Django --> MongoDB
+Django --> RabbitMQ
+
+RabbitMQ --> CeleryWorker
+
+CeleryWorker --> Redis
+CeleryWorker --> MongoDB
+
+CeleryBeat --> RabbitMQ
+
+Flower --> CeleryWorker
+```
+
+---
+
+# 🔄 Task Flow Documentation
+
+1. User mengakses endpoint course
+2. Django memeriksa Redis cache
+3. Jika cache tersedia, data dikembalikan dari Redis
+4. Jika cache tidak tersedia, data diambil dari PostgreSQL
+5. Data disimpan ke Redis
+6. User melakukan enrollment
+7. Django mengirim task ke RabbitMQ
+8. Celery Worker memproses task
+9. Aktivitas dicatat ke MongoDB
+10. Flower memonitor seluruh task
+
+---
+
 # 📷 Screenshot Pengujian
 
-Tambahkan screenshot berikut:
+Lampirkan screenshot berikut pada laporan atau repository:
 
-- Register berhasil
-- Login berhasil
-- Token authorize berhasil
-- GET data user
-- Create course berhasil
-- Error 404
-- Error validasi
+1. Docker Compose Services (`docker ps`)
+2. Swagger UI (`/api/docs`)
+3. Register User Berhasil
+4. Login User Berhasil
+5. JWT Authorization Berhasil
+6. GET User Profile
+7. Flower Dashboard
+8. RabbitMQ Dashboard
+9. Redis CLI (`PING`, `KEYS *`)
+10. MongoDB Collections (`show collections`)
 
 ---
 
 # 🧪 Testing
 
-Project diuji menggunakan:
+Pengujian dilakukan menggunakan:
 
 - Swagger UI
 - Postman
+- RabbitMQ Management Dashboard
+- Flower Monitoring Dashboard
+- Redis CLI
+- MongoDB Shell
+
+---
+
+# 📁 Struktur Project
+
+```text
+simple-lms
+│
+├── core
+│   ├── api.py
+│   ├── models.py
+│   ├── tasks.py
+│   ├── mongo.py
+│   ├── schemas.py
+│   └── auth.py
+│
+├── simplelms
+│   ├── settings.py
+│   ├── urls.py
+│   ├── celery.py
+│   └── wsgi.py
+│
+├── docker-compose.yml
+├── Dockerfile
+├── requirements.txt
+├── README.md
+└── manage.py
+```
 
 ---
 
 # 📁 Kriteria Penilaian yang Dipenuhi
 
-✅ Kelengkapan API Endpoint
-✅ JWT Authentication berjalan
-✅ RBAC berjalan
-✅ Schema Validation
+✅ Redis Integration
+
+✅ MongoDB Integration
+
+✅ Celery Tasks (4 Tasks)
+
+✅ RabbitMQ Message Broker
+
+✅ Docker Compose Services
+
+✅ Flower Monitoring
+
+✅ JWT Authentication
+
 ✅ Swagger Documentation
-✅ Postman Collection
+
+✅ Role-Based Access Control (RBAC)
+
+✅ Rate Limiting
 
 ---
 
 # 👨‍💻 Author
 
 **Iqbal Tegar Pratama**
+
 **NIM:** A11.2023.14969
+
 **Kelas:** Pemrograman Sisi Server (A11.4602)
 
 ---
 
 # ⭐ Penutup
 
-Project ini dibuat sebagai media pembelajaran implementasi backend modern menggunakan Django Ninja dan REST API.
+Project ini dibuat sebagai implementasi backend modern menggunakan Django Ninja dengan dukungan Redis, MongoDB, RabbitMQ, Celery, Flower, JWT Authentication, Rate Limiting, dan Docker Compose.
 
-Terima kasih.
+Seluruh fitur dikembangkan untuk memenuhi kebutuhan tugas **Progress 4: Advanced Features & Integration** pada mata kuliah **Pemrograman Sisi Server**.
+#   P r o g r e s s - 4 - S i m p l e - L M S - A d v a n c e d - F e a t u r e s - I n t e g r a t i o n  
+ 
