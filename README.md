@@ -586,4 +586,5 @@ Project ini dibuat sebagai implementasi backend modern menggunakan Django Ninja 
 
 Seluruh fitur dikembangkan untuk memenuhi kebutuhan tugas **Progress 4: Advanced Features & Integration** pada mata kuliah **Pemrograman Sisi Server**.
 #   P r o g r e s s - 4 - S i m p l e - L M S - A d v a n c e d - F e a t u r e s - I n t e g r a t i o n  
+ #   a u t o m a t e d - t e s t i n g - u n t u k - p r o y e k - S i m p l e - L M S -  
  
