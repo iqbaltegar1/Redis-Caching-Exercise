@@ -1,0 +1,7 @@
+﻿OK
+hello
+1
+OK
+1782313801.872271 [0 127.0.0.1:52088] "SET" "monitor_test_key" "hello"
+1782313801.876099 [0 127.0.0.1:52098] "GET" "monitor_test_key"
+1782313801.879149 [0 127.0.0.1:52102] "INCR" "monitor_test_counter"

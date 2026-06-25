@@ -4,6 +4,11 @@ from datetime import datetime
 from typing import Optional, List
 
 
+class AnalyticsItem(Schema):
+    event: str
+    count: int
+
+
 # ==================== User Schemas ====================
 
 class UserOut(Schema):
@@ -59,6 +64,14 @@ class DetailCourseOut(CourseOut):
     contents: List[ContentTitleOut] = Field(
         ..., alias="coursecontent_set"
     )
+
+class PopularCourseOut(Schema):
+    id: int
+    name: str
+    description: str
+    price: int
+    teacher: UserOut
+    score: float
 
 class CourseFilterSchema(FilterSchema):
     search: Optional[str] = Field(None, q=['name__icontains', 'description__icontains'])

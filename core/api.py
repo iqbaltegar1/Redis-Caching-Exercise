@@ -2,13 +2,18 @@ from ninja import NinjaAPI, Query, Router
 from ninja_simple_jwt.auth.ninja_auth import HttpJwtAuth
 from django.contrib.auth.models import User
 from ninja.errors import HttpError
+from django.core.cache import cache
+from django.db.models import Count
+from django_redis import get_redis_connection
+from core.mongo import log_activity, db
+from core.tasks import send_enrollment_email, generate_certificate, export_course_report
 from typing import List
 
 from core.models import Course, CourseContent, CourseMember, Comment, CourseProgress
 from core.schemas import (
-    Register, UserOut, CourseIn, CourseOut, DetailCourseOut, CourseFilterSchema,
+    Register, UserOut, CourseIn, CourseOut, DetailCourseOut, PopularCourseOut, CourseFilterSchema,
     CourseContentIn, CourseContentOut, CourseMemberOut, CommentIn, CommentUpdate,
-    ProfileUpdate, ProgressIn, ProgressOut
+    ProfileUpdate, ProgressIn, ProgressOut, AnalyticsItem
 )
 from core.helpers import (
     get_authenticated_user, check_course_owner, 
@@ -78,16 +83,83 @@ def update_profile(request, data: ProfileUpdate):
 
 @courses_router.get('', response=List[CourseOut])
 def list_courses(request, filters: CourseFilterSchema = Query(...)):
+    cache_key = f"course_list:{filters.search or ''}:{filters.min_price or ''}:{filters.max_price or ''}"
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return cached
+
     courses = Course.objects.all().select_related('teacher')
     courses = filters.filter(courses)
-    return courses
+    course_list = list(courses)
+    cache.set(cache_key, course_list, timeout=300)
+    return course_list
 
 @courses_router.get('/{id}', response=DetailCourseOut)
 def get_course(request, id: int):
+    cache_key = f"course_detail:{id}"
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return cached
+
     course = Course.objects.filter(id=id).first()
     if not course:
         raise HttpError(404, "Course tidak ditemukan")
+
+    cache.set(cache_key, course, timeout=300)
     return course
+
+@courses_router.get('/popular/', response=List[PopularCourseOut])
+def popularCourses(request):
+    """Menampilkan top 10 course terpopuler berdasarkan jumlah enrollment."""
+    redis_conn = get_redis_connection('default')
+    popular_key = 'popular_courses'
+    items = redis_conn.zrevrange(popular_key, 0, 9, withscores=True)
+
+    if not items:
+        counts = CourseMember.objects.values('course_id').annotate(score=Count('id')).order_by('-score')[:10]
+        for entry in counts:
+            redis_conn.zadd(popular_key, {f"course:{entry['course_id']}": entry['score']})
+        items = redis_conn.zrevrange(popular_key, 0, 9, withscores=True)
+
+    course_ids = [int(item[0].split(':', 1)[1]) for item in items]
+    courses = {course.id: course for course in Course.objects.filter(id__in=course_ids).select_related('teacher')}
+
+    result = []
+    for course_key, score in items:
+        course_id = int(course_key.split(':', 1)[1])
+        course = courses.get(course_id)
+        if course:
+            result.append({
+                'id': course.id,
+                'name': course.name,
+                'description': course.description,
+                'price': course.price,
+                'teacher': course.teacher,
+                'score': float(score),
+            })
+
+    return result
+
+@courses_router.post('/{id}/visit/')
+def visitCourse(request, id: int):
+    visited = request.session.get('visited_courses', [])
+    if id not in visited:
+        visited.append(id)
+        request.session['visited_courses'] = visited
+
+    return {
+        'course_id': id,
+        'total_visited': len(visited),
+        'visited_courses': visited,
+    }
+
+@courses_router.get('/my-history/')
+def getVisitHistory(request):
+    visited = request.session.get('visited_courses', [])
+    return {
+        'total_visited': len(visited),
+        'visited_courses': visited,
+    }
 
 @courses_router.post('', auth=apiAuth, response={201: CourseOut})
 @is_instructor
@@ -99,6 +171,8 @@ def createCourse(request, data: CourseIn):
         price=data.price,
         teacher=user
     )
+    cache.delete_pattern('course_list*')
+    log_activity('course_created', {'course_id': course.id, 'course_name': course.name, 'teacher_id': user.id})
     return 201, course
 
 @courses_router.patch('/{id}', auth=apiAuth, response=CourseOut)
@@ -116,6 +190,9 @@ def updateCourse(request, id: int, data: CourseIn):
     course.description = data.description
     course.price = data.price
     course.save()
+    cache.delete_pattern('course_list*')
+    cache.delete(f'course_detail:{course.id}')
+    log_activity('course_updated', {'course_id': course.id, 'course_name': course.name, 'teacher_id': user.id})
     return course
 
 @courses_router.delete('/{id}', auth=apiAuth)
@@ -130,28 +207,81 @@ def deleteCourse(request, id: int):
     # is_admin decorator will ensure only admin reaches here, but we also check_owner_or_superadmin
     check_owner_or_superadmin(course.teacher, user)
 
+    redis_conn = get_redis_connection('default')
+    redis_conn.zrem('popular_courses', f'course:{id}')
     course.delete()
+    cache.delete_pattern('course_list*')
+    cache.delete(f'course_detail:{id}')
+    log_activity('course_deleted', {'course_id': id, 'course_name': course.name, 'admin_id': user.id})
     return {"message": "Course berhasil dihapus"}
+
+@courses_router.get('/reports/analytics', response=List[AnalyticsItem])
+def get_course_analytics(request):
+    pipeline = [
+        {'$match': {'event': {'$in': ['user_enrolled', 'lesson_completed', 'course_created', 'course_deleted']}}},
+        {'$group': {'_id': '$event', 'count': {'$sum': 1}}},
+    ]
+    analytics = list(db.activity_logs.aggregate(pipeline))
+    return [
+        {'event': item['_id'], 'count': item['count']}
+        for item in analytics
+    ]
+
+@courses_router.get('/reports/activity-logs')
+def get_activity_logs(request, limit: int = Query(20, description="Jumlah log terbaru yang dikembalikan")):
+    logs = list(db.activity_logs.find().sort('timestamp', -1).limit(limit))
+    for item in logs:
+        item['_id'] = str(item['_id'])
+    return logs
+
+@courses_router.get('/reports/learning-analytics')
+def get_learning_analytics(request):
+    pipeline = [
+        {'$group': {'_id': '$course_name', 'certificates_generated': {'$sum': 1}}},
+        {'$sort': {'certificates_generated': -1}},
+    ]
+    analytics = list(db.learning_analytics.aggregate(pipeline))
+    return [
+        {'course_name': item['_id'], 'certificates_generated': item['certificates_generated']}
+        for item in analytics
+    ]
+
+@courses_router.post('/export-report', auth=apiAuth)
+@is_admin
+def exportCourseReport(request):
+    export_course_report.delay()
+    log_activity('course_report_export_requested', {'requested_by': request.user.id})
+    return {"message": "Export course report sedang diproses secara asynchronous"}
 
 # ==================== Enrollments ====================
 
-@enrollments_router.post('', auth=apiAuth, response={201: CourseMemberOut})
+@enrollments_router.post('/{course_id}', auth=apiAuth, response={201: CourseMemberOut})
 @is_student
 def courseEnrollment(request, course_id: int):
-    user_id = User.objects.get(pk=request.user.id)
+    user = User.objects.get(pk=request.user.id)
     course = Course.objects.filter(pk=course_id).first()
     
     if not course:
         raise HttpError(404, "Course tidak ditemukan")
 
-    if CourseMember.objects.filter(user_id=user_id, course_id=course).exists():
+    if CourseMember.objects.filter(user_id=user, course_id=course).exists():
         raise HttpError(400, "Anda sudah terdaftar di course ini")
 
     enrollment = CourseMember.objects.create(
-        user_id=user_id,
+        user_id=user,
         course_id=course,
         roles='std'
     )
+
+    send_enrollment_email.delay(user.email, course.name)
+    cache.delete_pattern('course_list*')
+    cache.delete(f'course_detail:{course.id}')
+
+    redis_conn = get_redis_connection('default')
+    redis_conn.zincrby('popular_courses', 1, f'course:{course.id}')
+
+    log_activity('user_enrolled', {'user_id': user.id, 'course_id': course.id, 'course_name': course.name})
+
     return 201, enrollment
 
 @enrollments_router.get('/my-courses', auth=apiAuth, response=List[CourseMemberOut])
@@ -187,6 +317,10 @@ def markLessonComplete(request, id: int, data: ProgressIn):
     if not created:
         progress.is_completed = data.is_completed
         progress.save()
+
+    if data.is_completed:
+        generate_certificate.delay(user.id, course.id)
+        log_activity('lesson_completed', {'user_id': user.id, 'course_id': course.id, 'content_id': content.id})
 
     return 201, progress
 

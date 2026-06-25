@@ -1,0 +1,35 @@
+[run]
+# Direktori yang akan diukur coverage-nya
+source = 
+    core
+    utils
+
+# File/folder yang diabaikan
+omit =
+    */migrations/*
+    */tests/*
+    */test_*.py
+    */__pycache__/*
+    */admin.py
+    manage.py
+    */wsgi.py
+    */asgi.py
+    */__init__.py
+
+[report]
+# Tampilkan baris yang belum ter-cover
+show_missing = True
+
+# Test akan gagal jika coverage di bawah threshold
+fail_under = 80
+
+# Precision untuk report
+precision = 2
+
+[html]
+# Direktori output untuk HTML report
+directory = htmlcov
+
+[xml]
+# Output untuk XML (untuk CI/CD)
+output = coverage.xml
